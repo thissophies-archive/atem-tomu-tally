@@ -1,9 +1,8 @@
-import usb from "usb";
 import * as E from "fp-ts/lib/Either";
-import * as TE from "fp-ts/lib/TaskEither";
-import * as T from "fp-ts/lib/Task";
 import * as O from "fp-ts/lib/Option";
 import * as P from "fp-ts/lib/pipeable";
+import * as TE from "fp-ts/lib/TaskEither";
+import usb from "usb";
 import { ATEMTallyState } from "./lib/ATEMTallyState";
 import { log } from "./lib/log";
 import {
@@ -12,7 +11,6 @@ import {
   setState,
   TallyState,
 } from "./lib/usb";
-import { flow } from "fp-ts/lib/function";
 
 // usb.setDebugLevel(4);
 
@@ -26,27 +24,13 @@ if (!light) {
 light.open(false);
 
 (async (): Promise<void> => {
-  P.pipe(
-    getSerialNumber(light),
-    TE.mapLeft((e) => {
-      log("Error", "Failed to get serial", e);
-      return e;
-    })
-  );
-
-  const maybeGetSerial = await getSerialNumber(light)();
-  if (E.isLeft(maybeGetSerial)) {
-    log("Error", "Failed to get serial", maybeGetSerial.left);
+  const maybeSerial = await getSerialNumber(light)();
+  if (E.isLeft(maybeSerial)) {
+    log("Error", "Failed to get serial", maybeSerial.left);
     return;
   }
 
-  const maybeSerial = maybeGetSerial.right;
-
-  if (O.isNone(maybeSerial)) {
-    log("USB", "Serial number empty, this seems... fishy.");
-  } else {
-    log("USB", "Serial number is", maybeSerial.value.toString());
-  }
+  log("USB", "Serial number is", maybeSerial.right.toString());
 
   const maybeSetConfiguration = await setConfiguration(light, 1)();
   if (E.isLeft(maybeSetConfiguration)) {
